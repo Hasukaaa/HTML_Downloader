@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTML Editor & Downloader</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      background-color: #1e1e2e;
+      color: #cdd6f4;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background-color: #181825;
+      border-bottom: 1px solid #313244;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: #cba6f7;
+    }
+
+    .logo span {
+      color: #89b4fa;
+    }
+
+    .file-indicator {
+      font-size: 13px;
+      color: #6c7086;
+      padding: 4px 12px;
+      background: #1e1e2e;
+      border-radius: 4px;
+      border: 1px solid #313244;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .preview-toggle {
+      font-size: 13px;
+      color: #a6adc8;
+      background: #313244;
+      border: 1px solid #45475a;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .preview-toggle:hover {
+      background: #45475a;
+      color: #cdd6f4;
+    }
+
+    .preview-toggle.active {
+      background: #89b4fa;
+      color: #1e1e2e;
+      border-color: #89b4fa;
+    }
+
+    /* Main editor area */
+    .editor-container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .editor-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .pane-header {
+      background: #181825;
+      padding: 8px 16px;
+      font-size: 12px;
+      color: #6c7086;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #313244;
+      flex-shrink: 0;
+    }
+
+    .editor-wrapper {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .line-numbers {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 50px;
+      height: 100%;
+      background: #181825;
+      padding: 16px 0;
+      text-align: right;
+      font-family: 'Consolas', 'Fira Code', 'SF Mono', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #45475a;
+      overflow: hidden;
+      user-select: none;
+      border-right: 1px solid #313244;
+    }
+
+    .line-numbers div {
+      padding-right: 12px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100%;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border: none;
+      outline: none;
+      resize: none;
+      font-family: 'Consolas', 'Fira Code', 'SF Mono', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 16px 16px 16px 62px;
+      tab-size: 2;
+    }
+
+    textarea::placeholder {
+      color: #45475a;
+    }
+
+    /* Preview pane */
+    .preview-pane {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      border-left: 2px solid #313244;
+      overflow: hidden;
+    }
+
+    .preview-pane.visible {
+      display: flex;
+    }
+
+    .preview-frame {
+      flex: 1;
+      border: none;
+      background: #fff;
+    }
+
+    /* Footer */
+    footer {
+      background-color: #181825;
+      border-top: 1px solid #313244;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #89b4fa, #cba6f7);
+      color: #1e1e2e;
+      border: none;
+      padding: 12px 36px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 12px rgba(137, 180, 250, 0.3);
+    }
+
+    .download-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(137, 180, 250, 0.45);
+    }
+
+    .download-btn:active {
+      transform: translateY(0);
+    }
+
+    .download-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Status bar */
+    .status-bar {
+      background: #11111b;
+      padding: 4px 16px;
+      font-size: 12px;
+      color: #6c7086;
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid #313244;
+      flex-shrink: 0;
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #a6e3a1;
+      color: #1e1e2e;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .editor-container {
+        flex-direction: column;
+      }
+
+      .preview-pane {
+        border-left: none;
+        border-top: 2px solid #313244;
+      }
+
+      .download-btn {
+        padding: 10px 24px;
+        font-size: 14px;
+      }
+
+      .file-indicator {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <div class="logo">&lt;/&gt; <span>HTML Editor</span></div>
+      <div class="file-indicator" id="fileIndicator">index.html</div>
+    </div>
+    <div class="header-right">
+      <button class="preview-toggle" id="previewToggle">Preview</button>
+    </div>
+  </header>
+
+  <!-- Editor -->
+  <div class="editor-container">
+    <div class="editor-pane">
+      <div class="pane-header">Editor</div>
+      <div class="editor-wrapper">
+        <div class="line-numbers" id="lineNumbers"></div>
+        <textarea
+          id="editor"
+          spellcheck="false"
+          placeholder="HTMLをここに入力してください..."
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-pane" id="previewPane">
+      <div class="pane-header">Preview</div>
+      <iframe class="preview-frame" id="previewFrame" sandbox="allow-scripts"></iframe>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span id="cursorPos">行 1, 列 1</span>
+    <span id="charCount">0 文字</span>
+  </div>
+
+  <!-- Footer with download button -->
+  <footer>
+    <button class="download-btn" id="downloadBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      HTML ダウンロード
+    </button>
+  </footer>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">ダウンロードしました</div>
+
+  <script>
+    const editor = document.getElementById('editor');
+    const lineNumbers = document.getElementById('lineNumbers');
+    const previewToggle = document.getElementById('previewToggle');
+    const previewPane = document.getElementById('previewPane');
+    const previewFrame = document.getElementById('previewFrame');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const fileIndicator = document.getElementById('fileIndicator');
+    const cursorPos = document.getElementById('cursorPos');
+    const charCount = document.getElementById('charCount');
+    const toast = document.getElementById('toast');
+
+    // Default HTML template
+    const defaultHTML = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Page</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f0f0f0;
+    }
+    h1 {
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>Hello, World!</h1>
+</body>
+</html>`;
+
+    editor.value = defaultHTML;
+
+    // Line numbers
+    function updateLineNumbers() {
+      const lines = editor.value.split('\n').length;
+      let html = '';
+      for (let i = 1; i <= lines; i++) {
+        html += `<div>${i}</div>`;
+      }
+      lineNumbers.innerHTML = html;
+    }
+
+    // Sync scroll between editor and line numbers
+    editor.addEventListener('scroll', () => {
+      lineNumbers.scrollTop = editor.scrollTop;
+    });
+
+    // Update line numbers and status on input
+    editor.addEventListener('input', () => {
+      updateLineNumbers();
+      updateStatus();
+      updatePreview();
+    });
+
+    // Update cursor position
+    editor.addEventListener('click', updateStatus);
+    editor.addEventListener('keyup', updateStatus);
+
+    function updateStatus() {
+      const text = editor.value;
+      const pos = editor.selectionStart;
+      const lines = text.substring(0, pos).split('\n');
+      const line = lines.length;
+      const col = lines[lines.length - 1].length + 1;
+      cursorPos.textContent = `行 ${line}, 列 ${col}`;
+      charCount.textContent = `${text.length} 文字`;
+    }
+
+    // Tab key support
+    editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
+        editor.selectionStart = editor.selectionEnd = start + 2;
+        updateLineNumbers();
+      }
+    });
+
+    // Preview toggle
+    let previewVisible = false;
+    previewToggle.addEventListener('click', () => {
+      previewVisible = !previewVisible;
+      previewPane.classList.toggle('visible', previewVisible);
+      previewToggle.classList.toggle('active', previewVisible);
+      if (previewVisible) {
+        updatePreview();
+      }
+    });
+
+    function updatePreview() {
+      if (!previewVisible) return;
+      const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+      doc.open();
+      doc.write(editor.value);
+      doc.close();
+    }
+
+    // Download HTML file
+    downloadBtn.addEventListener('click', () => {
+      const content = editor.value;
+      if (!content.trim()) {
+        showToast('HTMLを入力してください');
+        return;
+      }
+      const blob = new Blob([content], { type: 'text/html; charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileIndicator.textContent || 'index.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('ダウンロードしました');
+    });
+
+    // File name editing
+    fileIndicator.addEventListener('click', () => {
+      const newName = prompt('ファイル名を入力してください:', fileIndicator.textContent);
+      if (newName && newName.trim()) {
+        let name = newName.trim();
+        if (!name.endsWith('.html') && !name.endsWith('.htm')) {
+          name += '.html';
+        }
+        fileIndicator.textContent = name;
+      }
+    });
+
+    // Toast notification
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+
+    // Initialize
+    updateLineNumbers();
+    updateStatus();
+  </script>
+</body>
+</html>
