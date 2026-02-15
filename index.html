@@ -56,34 +56,6 @@
       border: 1px solid #313244;
     }
 
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .preview-toggle {
-      font-size: 13px;
-      color: #a6adc8;
-      background: #313244;
-      border: 1px solid #45475a;
-      padding: 6px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .preview-toggle:hover {
-      background: #45475a;
-      color: #cdd6f4;
-    }
-
-    .preview-toggle.active {
-      background: #89b4fa;
-      color: #1e1e2e;
-      border-color: #89b4fa;
-    }
-
     /* Main editor area */
     .editor-container {
       flex: 1;
@@ -154,25 +126,6 @@
 
     textarea::placeholder {
       color: #45475a;
-    }
-
-    /* Preview pane */
-    .preview-pane {
-      flex: 1;
-      display: none;
-      flex-direction: column;
-      border-left: 2px solid #313244;
-      overflow: hidden;
-    }
-
-    .preview-pane.visible {
-      display: flex;
-    }
-
-    .preview-frame {
-      flex: 1;
-      border: none;
-      background: #fff;
     }
 
     /* Footer */
@@ -257,11 +210,6 @@
         flex-direction: column;
       }
 
-      .preview-pane {
-        border-left: none;
-        border-top: 2px solid #313244;
-      }
-
       .download-btn {
         padding: 10px 24px;
         font-size: 14px;
@@ -280,9 +228,6 @@
       <div class="logo">&lt;/&gt; <span>HTML Editor</span></div>
       <div class="file-indicator" id="fileIndicator">index.html</div>
     </div>
-    <div class="header-right">
-      <button class="preview-toggle" id="previewToggle">Preview</button>
-    </div>
   </header>
 
   <!-- Editor -->
@@ -299,11 +244,6 @@
       </div>
     </div>
 
-    <!-- Preview -->
-    <div class="preview-pane" id="previewPane">
-      <div class="pane-header">Preview</div>
-      <iframe class="preview-frame" id="previewFrame" sandbox="allow-scripts"></iframe>
-    </div>
   </div>
 
   <!-- Status bar -->
@@ -330,9 +270,6 @@
   <script>
     const editor = document.getElementById('editor');
     const lineNumbers = document.getElementById('lineNumbers');
-    const previewToggle = document.getElementById('previewToggle');
-    const previewPane = document.getElementById('previewPane');
-    const previewFrame = document.getElementById('previewFrame');
     const downloadBtn = document.getElementById('downloadBtn');
     const fileIndicator = document.getElementById('fileIndicator');
     const cursorPos = document.getElementById('cursorPos');
@@ -358,7 +295,6 @@
     editor.addEventListener('input', () => {
       updateLineNumbers();
       updateStatus();
-      updatePreview();
     });
 
     // Update cursor position
@@ -386,25 +322,6 @@
         updateLineNumbers();
       }
     });
-
-    // Preview toggle
-    let previewVisible = false;
-    previewToggle.addEventListener('click', () => {
-      previewVisible = !previewVisible;
-      previewPane.classList.toggle('visible', previewVisible);
-      previewToggle.classList.toggle('active', previewVisible);
-      if (previewVisible) {
-        updatePreview();
-      }
-    });
-
-    function updatePreview() {
-      if (!previewVisible) return;
-      const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
-      doc.open();
-      doc.write(editor.value);
-      doc.close();
-    }
 
     // Download HTML file
     downloadBtn.addEventListener('click', () => {
